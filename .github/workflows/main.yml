@@ -19,7 +19,7 @@ env:
  
 jobs:
 
-  TESTTING-CODE-QUALITY:
+  TESTING-CODE-QUALITY:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -63,7 +63,7 @@ jobs:
              -Dsonar.java.binaries=target/classes/com/visualpathit/account
 
   BUILD_PUBLISH_IMAGE:
-    needs: TESTTING-CODE-QUALITY
+    needs: TESTING-CODE-QUALITY
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -84,8 +84,7 @@ jobs:
           cache_from: ${{ secrets.cache }}
           repo: gitapp
           region: ${{env.AWS_REGION}}
-          tags: latest, ${{ github.run_number }}
-          # auto_tag: true
+          tags: latest, ${{ github.run_number }}          
           daemon_off: false
           dockerfile: ./Dockerfile
           context: ./
