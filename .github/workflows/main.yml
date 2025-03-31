@@ -10,12 +10,12 @@ on:
       - main
 env:
   AWS_REGION: us-east-1
-  # SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  # SONAR_URL: ${{ secrets.SONAR_URL }}
-  # SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
-  # SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
-  # DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  # DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  ECR_REPOSITORY: gitapp
+  ECS_CLUSTER: vpro-cluster
+  ECS_SERVICE: vpro-service
+  ECS_TASK_DEFINITION: aws-files/taskdeffile.json
+  ECS_CONTAINER_NAME: vprofileapp
+   
  
 jobs:
 
@@ -90,8 +90,39 @@ jobs:
           dockerfile: ./Dockerfile
           context: ./
         
+  DEPLOY_TO_ECS:
+    needs: BUILD_PUBLISH_IMAGE
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_ID }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name: ${{ env.ECS_CONTAINER_NAME }}
+          image: ${{ secrets.REGISTRY }}/${{ env.AWS_REGION }}:${{ github.run_number }}
+ 
+
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{steps.task-def.outputs.task-definition }}
+          service: ${{env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}          
+          wait-for-service-stability: true
        
-        
+          
             
 
 
